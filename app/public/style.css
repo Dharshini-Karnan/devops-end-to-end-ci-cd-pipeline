@@ -1,0 +1,175 @@
+/* =========================
+   GLOBAL
+========================= */
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Ubuntu, Cantarell,
+               "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    #eef2f7 0%,
+    #e5e9f0 100%
+  );
+  color: #1f2937;
+}
+
+/* =========================
+   HEADER
+========================= */
+.header {
+  text-align: center;
+  padding: 40px 20px 25px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.header p {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* =========================
+   DASHBOARD WRAPPER
+========================= */
+.dashboard {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* =========================
+   MAIN CARD
+========================= */
+.status-card {
+  background: #f9fafb;
+  width: 100%;
+  max-width: 780px;
+  border-radius: 14px;
+  padding: 30px 34px;
+  box-shadow:
+    0 20px 35px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+}
+
+/* =========================
+   STATUS HEADER
+========================= */
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.status-badge {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-badge.up {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #14532d;
+}
+
+.status-badge.down {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #7f1d1d;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+button {
+  border: 1px solid #d1d5db;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #111827;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: #e5e7eb;
+}
+
+button.secondary {
+  background: #111827;
+  color: #ffffff;
+  border: none;
+}
+
+button.secondary:hover {
+  background: #1f2937;
+}
+
+/* =========================
+   GRID
+========================= */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.item {
+  background: #f1f5f9;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.item span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.item strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.item.full {
+  grid-column: span 2;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+.actions {
+  margin-top: 28px;
+  text-align: center;
+}
+
+/* =========================
+   FOOTER
+========================= */
+footer {
+  text-align: center;
+  margin: 30px 0 22px;
+  font-size: 12px;
+  color: #6b7280;
+}

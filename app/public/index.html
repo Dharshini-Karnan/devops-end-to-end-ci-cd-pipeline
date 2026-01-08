@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DevOps CI/CD Service Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <h1>🚀 DevOps CI/CD Service Dashboard</h1>
+    <p>Automated deployment with Docker, AWS & Monitoring</p>
+  </header>
+
+  <main class="dashboard">
+    <div class="status-card">
+      <div class="status-header">
+        <span class="status-badge" id="status">Loading</span>
+        <button onclick="loadData()">🔄 Refresh</button>
+      </div>
+
+      <div class="grid">
+        <div class="item">
+          <span>Application Version</span>
+          <strong id="version">-</strong>
+        </div>
+
+        <div class="item">
+          <span>Environment</span>
+          <strong id="env">Local</strong>
+        </div>
+
+        <div class="item">
+          <span>Total Visits</span>
+          <strong id="visits">-</strong>
+        </div>
+
+        <div class="item">
+          <span>Service Uptime</span>
+          <strong><span id="uptime">-</span> sec</strong>
+        </div>
+
+        <div class="item full">
+          <span>Last Updated</span>
+          <strong id="time">-</strong>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="secondary" onclick="checkHealth()">❤️ Health Check</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Built for DevOps CI/CD • Docker • AWS • Monitoring Demo
+  </footer>
+
+<script>
+  async function loadData() {
+    try {
+      const statusRes = await fetch('/api/status');
+      const statusData = await statusRes.json();
+
+      const healthRes = await fetch('/health');
+      const healthData = await healthRes.json();
+
+      const statusEl = document.getElementById('status');
+      statusEl.innerText = healthData.status;
+
+      statusEl.className = "status-badge " + 
+        (healthData.status === "UP" ? "up" : "down");
+
+      document.getElementById('version').innerText = statusData.version;
+      document.getElementById('visits').innerText = statusData.visits;
+      document.getElementById('uptime').innerText = Math.floor(healthData.uptime);
+      document.getElementById('time').innerText =
+        new Date(statusData.time).toLocaleString();
+
+    } catch (err) {
+      document.getElementById('status').innerText = "ERROR";
+    }
+  }
+
+  async function checkHealth() {
+    alert("Service is healthy ✅");
+  }
+
+  loadData();
+</script>
+
+</body>
+</html>
