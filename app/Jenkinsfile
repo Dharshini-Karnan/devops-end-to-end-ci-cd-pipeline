@@ -27,7 +27,7 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub',
+                    credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
@@ -42,10 +42,10 @@ pipeline {
 
     post {
         success {
-            echo "CI/CD Pipeline completed successfully!"
+            echo "✅ CI/CD Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline failed!"
+            echo "❌ CI/CD Pipeline failed!"
         }
     }
 }
