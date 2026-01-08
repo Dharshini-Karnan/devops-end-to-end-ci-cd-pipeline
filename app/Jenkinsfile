@@ -1,7 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "dharshinikarnan/devops-nodejs-app"
+        IMAGE_TAG  = "1.0"
+    }
+
     stages {
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
@@ -13,7 +19,22 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('app') {
-                    bat 'docker build -t dharshinikarnan/devops-nodejs-app:1.0 .'
+                    bat "docker build -t %IMAGE_NAME%:%IMAGE_TAG% ."
+                }
+            }
+        }
+
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    bat """
+                    docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                    docker push %IMAGE_NAME%:%IMAGE_TAG%
+                    """
                 }
             }
         }
@@ -21,10 +42,10 @@ pipeline {
 
     post {
         success {
-            echo 'Docker image built successfully'
+            echo "CI/CD Pipeline completed successfully!"
         }
         failure {
-            echo 'Build failed'
+            echo "Pipeline failed!"
         }
     }
 }
