@@ -1,16 +1,11 @@
 pipeline {
     agent any
 
-    environment {
-        APP_NAME = "devops-nodejs-app"
-        IMAGE_TAG = "1.0"
-    }
-
     stages {
-
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
+                    credentialsId: 'github_acc',
                     url: 'https://github.com/Dharshini-Karnan/devops-end-to-end-ci-cd-pipeline.git'
             }
         }
@@ -18,7 +13,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('app') {
-                    sh 'docker build -t ${APP_NAME}:${IMAGE_TAG} .'
+                    bat 'docker build -t dharshinikarnan/devops-nodejs-app:1.0 .'
                 }
             }
         }
@@ -26,10 +21,10 @@ pipeline {
 
     post {
         success {
-            echo "Docker image built successfully"
+            echo 'Docker image built successfully'
         }
         failure {
-            echo "Build failed"
+            echo 'Build failed'
         }
     }
 }
