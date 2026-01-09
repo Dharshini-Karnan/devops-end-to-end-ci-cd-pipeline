@@ -4,7 +4,6 @@ pipeline {
     environment {
         IMAGE_NAME = "dharshinikarnan/devops-nodejs-app"
         IMAGE_TAG  = "1.0"
-        EC2_USER   = "ubuntu"
         EC2_HOST   = "13.127.149.214"
     }
 
@@ -28,11 +27,13 @@ pipeline {
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     bat """
                     docker login -u %DOCKER_USER% -p %DOCKER_PASS%
                     docker push %IMAGE_NAME%:%IMAGE_TAG%
@@ -43,14 +44,18 @@ pipeline {
 
         stage('Deploy to AWS EC2') {
             steps {
-                sshagent(['ec2-ssh-key']) {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-ssh-key',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )
+                ]) {
                     bat """
-                    ssh -o StrictHostKeyChecking=no %EC2_USER%@%EC2_HOST% "
-                        docker pull %IMAGE_NAME%:%IMAGE_TAG% &&
-                        docker stop devops-nodejs-app || true &&
-                        docker rm devops-nodejs-app || true &&
-                        docker run -d -p 3000:3000 --name devops-nodejs-app %IMAGE_NAME%:%IMAGE_TAG%
-                    "
+                    ssh -o StrictHostKeyChecking=no -i %SSH_KEY% %SSH_USER%@%EC2_HOST% ^
+                    "docker pull %IMAGE_NAME%:%IMAGE_TAG% && ^
+                     docker stop devops-nodejs-app || docker rm devops-nodejs-app || exit 0 && ^
+                     docker run -d -p 3000:3000 --name devops-nodejs-app %IMAGE_NAME%:%IMAGE_TAG%"
                     """
                 }
             }
@@ -59,7 +64,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline executed successfully!"
+            echo "✅ CI/CD Pipeline completed successfully!"
         }
         failure {
             echo "❌ CI/CD Pipeline failed!"
