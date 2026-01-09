@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "dharshinikarnan/devops-nodejs-app"
-        DOCKER_TAG   = "1.0"
-        EC2_HOST     = "13.127.149.214"
-        EC2_USER     = "ubuntu"
+        IMAGE_NAME = "dharshinikarnan/devops-nodejs-app"
+        IMAGE_TAG  = "1.0"
+        EC2_USER   = "ubuntu"
+        EC2_HOST   = "13.127.149.214"
     }
 
     stages {
@@ -19,23 +19,23 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('app') {
-                    bat "docker build -t %DOCKER_IMAGE%:%DOCKER_TAG% ."
+                    bat """
+                    docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+                    """
                 }
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     bat """
                     docker login -u %DOCKER_USER% -p %DOCKER_PASS%
-                    docker push %DOCKER_IMAGE%:%DOCKER_TAG%
+                    docker push %IMAGE_NAME%:%IMAGE_TAG%
                     """
                 }
             }
@@ -43,18 +43,14 @@ pipeline {
 
         stage('Deploy to AWS EC2') {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'ec2-ssh-key',
-                        keyFileVariable: 'SSH_KEY'
-                    )
-                ]) {
+                sshagent(['ec2-ssh-key']) {
                     bat """
-                    ssh -o StrictHostKeyChecking=no -i %SSH_KEY% %EC2_USER%@%EC2_HOST% ^
-                    "docker pull %DOCKER_IMAGE%:%DOCKER_TAG% && ^
-                     docker stop devops-nodejs-app || true && ^
-                     docker rm devops-nodejs-app || true && ^
-                     docker run -d -p 3000:3000 --name devops-nodejs-app %DOCKER_IMAGE%:%DOCKER_TAG%"
+                    ssh -o StrictHostKeyChecking=no %EC2_USER%@%EC2_HOST% "
+                        docker pull %IMAGE_NAME%:%IMAGE_TAG% &&
+                        docker stop devops-nodejs-app || true &&
+                        docker rm devops-nodejs-app || true &&
+                        docker run -d -p 3000:3000 --name devops-nodejs-app %IMAGE_NAME%:%IMAGE_TAG%
+                    "
                     """
                 }
             }
@@ -63,7 +59,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline completed successfully!"
+            echo "✅ CI/CD Pipeline executed successfully!"
         }
         failure {
             echo "❌ CI/CD Pipeline failed!"
