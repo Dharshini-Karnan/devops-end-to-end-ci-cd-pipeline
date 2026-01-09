@@ -2,60 +2,62 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "dharshinikarnan/devops-nodejs-app"
-        IMAGE_TAG  = "1.0"
-        EC2_HOST   = "13.127.149.214"
+        APP_NAME        = "devops-nodejs-app"
+        IMAGE_TAG       = "1.0"
+        DOCKERHUB_USER  = "dharshinikarnan"
+        DOCKER_IMAGE    = "${DOCKERHUB_USER}/${APP_NAME}:${IMAGE_TAG}"
+
+        EC2_USER        = "ubuntu"
+        EC2_HOST        = "13.235.42.11"
+        CONTAINER_NAME  = "devops-nodejs-container"
     }
 
     stages {
 
-        stage('Checkout Code') {
+        stage("Checkout Code") {
             steps {
-                checkout scm
+                git branch: "main",
+                    credentialsId: "github-credentials",
+                    url: "https://github.com/Dharshini-Karnan/devops-end-to-end-ci-cd-pipeline.git"
             }
         }
 
-        stage('Build Docker Image') {
+        stage("Build Docker Image") {
             steps {
-                dir('app') {
-                    bat """
-                    docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
-                    """
+                sh """
+                docker build -t ${DOCKER_IMAGE} app
+                """
+            }
+        }
+
+        stage("Docker Login") {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "dockerhub-credentials",
+                    usernameVariable: "DOCKER_USER",
+                    passwordVariable: "DOCKER_PASS"
+                )]) {
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                 }
             }
         }
 
-        stage('Push Docker Image to DockerHub') {
+        stage("Push Image to Docker Hub") {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
-                    bat """
-                    docker login -u %DOCKER_USER% -p %DOCKER_PASS%
-                    docker push %IMAGE_NAME%:%IMAGE_TAG%
-                    """
-                }
+                sh "docker push ${DOCKER_IMAGE}"
             }
         }
 
-        stage('Deploy to AWS EC2') {
+        stage("Deploy to EC2") {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'ec2-ssh-key',
-                        keyFileVariable: 'SSH_KEY',
-                        usernameVariable: 'SSH_USER'
-                    )
-                ]) {
-                    bat """
-                    ssh -o StrictHostKeyChecking=no -i %SSH_KEY% %SSH_USER%@%EC2_HOST% ^
-                    "docker pull %IMAGE_NAME%:%IMAGE_TAG% && ^
-                     docker stop devops-nodejs-app || docker rm devops-nodejs-app || exit 0 && ^
-                     docker run -d -p 3000:3000 --name devops-nodejs-app %IMAGE_NAME%:%IMAGE_TAG%"
+                sshagent(credentials: ["ec2-ssh-key"]) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+                      docker pull ${DOCKER_IMAGE}
+                      docker stop ${CONTAINER_NAME} || true
+                      docker rm ${CONTAINER_NAME} || true
+                      docker run -d -p 3000:3000 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}
+                    EOF
                     """
                 }
             }
@@ -64,10 +66,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline completed successfully!"
+            echo "✅ Deployment successful!"
         }
         failure {
-            echo "❌ CI/CD Pipeline failed!"
+            echo "❌ Pipeline failed!"
         }
     }
 }
