@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        // Docker
+        // Docker configuration
         DOCKER_IMAGE = "dharshinikarnan/devops-nodejs-app"
         DOCKER_TAG   = "1.0"
 
-        // EC2
+        // EC2 configuration
         EC2_USER = "ubuntu"
         EC2_HOST = "13.235.42.11"
         APP_PORT = "3000"
@@ -32,11 +32,13 @@ pipeline {
 
         stage('Docker Login') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     sh '''
                       echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
@@ -55,8 +57,8 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
                       docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
 
                       docker stop devops-nodejs-container || true
@@ -67,7 +69,7 @@ pipeline {
                         --name devops-nodejs-container \
                         ${DOCKER_IMAGE}:${DOCKER_TAG}
                     EOF
-                    '''
+                    """
                 }
             }
         }
