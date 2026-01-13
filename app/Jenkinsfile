@@ -2,62 +2,61 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME        = "devops-nodejs-app"
-        IMAGE_TAG       = "1.0"
-        DOCKERHUB_USER  = "dharshinikarnan"
-        DOCKER_IMAGE    = "${DOCKERHUB_USER}/${APP_NAME}:${IMAGE_TAG}"
-
-        EC2_USER        = "ubuntu"
-        EC2_HOST        = "13.235.42.11"
-        CONTAINER_NAME  = "devops-nodejs-container"
+        DOCKER_IMAGE = "dharshinikarnan/devops-nodejs-app"
+        DOCKER_TAG   = "1.0"
+        EC2_USER     = "ubuntu"
+        EC2_HOST     = "13.235.42.11"
+        APP_PORT     = "3000"
     }
 
     stages {
 
-        stage("Checkout Code") {
+        stage('Checkout Code') {
             steps {
-                git branch: "main",
-                    credentialsId: "github-credentials",
-                    url: "https://github.com/Dharshini-Karnan/devops-end-to-end-ci-cd-pipeline.git"
+                git credentialsId: 'github-credentials',
+                    url: 'https://github.com/Dharshini-Karnan/devops-end-to-end-ci-cd-pipeline.git',
+                    branch: 'main'
             }
         }
 
-        stage("Build Docker Image") {
+        stage('Build Docker Image') {
             steps {
                 sh """
-                docker build -t ${DOCKER_IMAGE} app
+                  docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} app
                 """
             }
         }
 
-        stage("Docker Login") {
+        stage('Docker Login') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: "dockerhub-credentials",
-                    usernameVariable: "DOCKER_USER",
-                    passwordVariable: "DOCKER_PASS"
-                )]) {
-                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
+                withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASS')]) {
+                    sh """
+                      echo "$DOCKER_PASS" | docker login -u dharshinikarnan --password-stdin
+                    """
                 }
             }
         }
 
-        stage("Push Image to Docker Hub") {
+        stage('Push Image to Docker Hub') {
             steps {
-                sh "docker push ${DOCKER_IMAGE}"
+                sh """
+                  docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                """
             }
         }
 
-        stage("Deploy to EC2") {
+        stage('Deploy to EC2') {
             steps {
-                sshagent(credentials: ["ec2-ssh-key"]) {
+                sshagent(credentials: ['ubuntu']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
-                      docker pull ${DOCKER_IMAGE}
-                      docker stop ${CONTAINER_NAME} || true
-                      docker rm ${CONTAINER_NAME} || true
-                      docker run -d -p 3000:3000 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}
-                    EOF
+                      ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+                        docker pull ${DOCKER_IMAGE}:${DOCKER_TAG} &&
+                        docker stop devops-nodejs-container || true &&
+                        docker rm devops-nodejs-container || true &&
+                        docker run -d -p ${APP_PORT}:${APP_PORT} \
+                          --name devops-nodejs-container \
+                          ${DOCKER_IMAGE}:${DOCKER_TAG}
+                      '
                     """
                 }
             }
@@ -66,10 +65,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Deployment successful!"
+            echo "✅ CI/CD Pipeline completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed!"
+            echo "❌ Pipeline failed. Check logs."
         }
     }
 }
